@@ -5,8 +5,20 @@ import java.util.concurrent.*;
 public class JumpWindowSingleThreadScheduledExecutor {
     private final int timePeriod;
     private final int winSize;
-    private final ScheduledExecutorService tickPool = Executors.newSingleThreadScheduledExecutor();
-    private final ExecutorService actionPool = Executors.newSingleThreadExecutor();
+
+    private final ScheduledExecutorService tickPool = Executors.newSingleThreadScheduledExecutor(r -> {
+        var t = new Thread(r);
+        t.setName("tick-thread");
+        t.setDaemon(true);
+        return t;
+    });
+
+    private final ExecutorService actionPool = Executors.newSingleThreadExecutor(r -> {
+        var t = new Thread(r);
+        t.setDaemon(true);
+        t.setName("action-thread");
+        return t;
+    });
 
     private int lt;
     private int rt;
