@@ -9,6 +9,8 @@ import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.*;
+import javafx.scene.media.AudioClip;
+import javafx.scene.media.AudioTrack;
 import javafx.scene.media.Media;
 import javafx.scene.media.MediaPlayer;
 import javafx.scene.text.Font;
@@ -17,7 +19,8 @@ import javafx.stage.Stage;
 
 import java.io.File;
 import java.io.IOException;
-
+import java.net.URL;
+import javax.sound.sampled.*;
 public class JmpTimerApp extends Application {
 
 
@@ -38,15 +41,12 @@ public class JmpTimerApp extends Application {
 //    }
 
     @Override
-    public void start(Stage stage) {
-        String bip = "/home/haxul/Development/jmp-timer/src/main/resources/co/starodubov/jmptimer/Whistling-Call-D2-www.fesliyanstudios.com.mp3";
-        Media hit = new Media(new File(bip).toURI().toString());
-        MediaPlayer mediaPlayer = new MediaPlayer(hit);
-        mediaPlayer.setBalance(1.0);
-        mediaPlayer.setVolume(1.0);
-        mediaPlayer.play();
-
-
+    public void start(Stage stage) throws UnsupportedAudioFileException, IOException, LineUnavailableException {
+        File file= new File("C:\\Users\\sssta\\development\\jmp-timer\\src\\main\\resources\\co\\starodubov\\jmptimer\\Whistling-Call-D2-www.fesliyanstudios.com.wav");
+        var as = AudioSystem.getAudioInputStream(file);
+        Clip clip = AudioSystem.getClip();
+        clip.open(as);
+        clip.start();
         var bp = new BorderPane();
 
         bp.setLeft(new LeftZone().getPane());

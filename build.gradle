@@ -11,6 +11,10 @@ version '1.0-SNAPSHOT'
 
 repositories {
     mavenCentral()
+    maven {
+        url 'https://repo.clojars.org'
+        name 'Clojars'
+    }
 }
 
 ext {
@@ -35,6 +39,7 @@ javafx {
 }
 
 dependencies {
+    implementation 'clojure-interop:javax.sound:1.0.5'
     implementation 'org.openjfx:javafx-media:19.0.2.1'
 
     compileOnly group: 'org.projectlombok', name: 'lombok', version: '1.18.28'
