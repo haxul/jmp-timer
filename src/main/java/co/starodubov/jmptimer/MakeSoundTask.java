@@ -1,7 +1,5 @@
 package co.starodubov.jmptimer;
 
-import javafx.scene.layout.Pane;
-
 import javax.sound.sampled.*;
 import java.io.File;
 import java.io.IOException;
@@ -14,12 +12,9 @@ public class MakeSoundTask {
     private final int winSize;
     private final File soundFile;
 
-    private final ScheduledExecutorService tickPool = Executors.newSingleThreadScheduledExecutor(r -> {
-        var t = new Thread(r);
-        t.setName("tick-thread");
-        t.setDaemon(true);
-        return t;
-    });
+    private final ScheduledExecutorService tickPool = Executors.newSingleThreadScheduledExecutor(r ->
+        Thread.ofPlatform().name("tick-thread").unstarted(r)
+    );
 
     private int lt;
     private int rt;
@@ -92,50 +87,48 @@ public class MakeSoundTask {
         final var clip = getClip();
         openClip(clip, as);
         final var countDownLatch = new CountDownLatch(1);
-        final var superVisor = new Thread(() -> {
-            try {
-                tickPool.scheduleAtFixedRate(() -> {
-                    if (lt >= timePeriod || cancel) {
+        Thread.ofVirtual()
+                .name("supervisor-thread")
+                .start(() -> {
+                    try {
+                        tickPool.scheduleAtFixedRate(() -> {
+                            if (lt >= timePeriod || cancel) {
+                                tickPool.shutdown();
+                                countDownLatch.countDown();
+                                return;
+                            }
+
+                            if (tick == actionTime) {
+                                clip.setMicrosecondPosition(0);
+                                clip.start();
+                                System.out.println("sound");
+                            }
+
+                            if (tick >= rt) {
+                                lt = rt;
+                                rt += winSize - 1;
+                                if (rt > timePeriod) {
+                                    rt = timePeriod;
+                                }
+                                actionTime = getNextActionTime();
+
+                                System.out.println("-------------- next action time " + actionTime);
+                                System.out.println("-------------- lt " + lt);
+                                System.out.println("-------------- rt " + rt);
+                            }
+                            tick++;
+                            System.out.println(tick + " sec"); //DEV ONLY
+                        }, 0, 1, TimeUnit.SECONDS);
+                        countDownLatch.await(10, TimeUnit.MINUTES);
+                        System.out.println("supervisor is done with task");
+                    } catch (Exception e) {
+                        System.err.println(e);
                         tickPool.shutdown();
-                        countDownLatch.countDown();
-                        return;
+                    } finally {
+                        close(as);
+                        if (clip != null) clip.close();
+                        System.out.println("clean resources");
                     }
-
-                    if (tick == actionTime) {
-                        clip.setMicrosecondPosition(0);
-                        clip.start();
-                        System.out.println("sound");
-                    }
-
-                    if (tick >= rt) {
-                        lt = rt;
-                        rt += winSize - 1;
-                        if (rt > timePeriod) {
-                            rt = timePeriod;
-                        }
-                        actionTime = getNextActionTime();
-
-                        System.out.println("-------------- next action time " + actionTime);
-                        System.out.println("-------------- lt " + lt);
-                        System.out.println("-------------- rt " + rt);
-                    }
-                    tick++;
-                    System.out.println(tick + " sec"); //DEV ONLY
-                }, 0, 1, TimeUnit.SECONDS);
-                countDownLatch.await(10, TimeUnit.MINUTES);
-                System.out.println("supervisor is done with task");
-            } catch (Exception e) {
-                System.err.println(e);
-                tickPool.shutdown();
-            } finally {
-                close(as);
-                if (clip != null) clip.close();
-                System.out.println("clean resources");
-            }
-        });
-
-        superVisor.setDaemon(true);
-        superVisor.setName("supervisor-thread");
-        superVisor.start();
+                });
     }
 }
